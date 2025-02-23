@@ -1,0 +1,9 @@
+# Tells Docker & Python which packages to install
+fastapi
+uvicorn   #  The web server to run FastAPI.
+sqlalchemy   # The ORM (Object Relational Mapper) for PostgreSQL
+psycopg2-binary #  PostgreSQL database driver.
+python-dotenv  # Loads environment variables from .env file.
+pytest   # for unit_tests
+httpx  # for unit_tests
+

@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:15
+    container_name: postgres_container
+    restart: always
+    env_file:
+      - .env  # Load database credentials from .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: fastapi_container
+    restart: always
+    depends_on:
+      - db
+    env_file:
+      - .env  # Load DATABASE_URL from .env
+    environment:   # Added to here rather than in .env file
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB}"  
+      PYTHONPATH: "/app"  # Set PYTHONPATH here globally for the container
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    command: sh -c "until nc -z db 5432; do echo 'Waiting for db'; sleep 1; done;   
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"   # uses nc (netcat) to check if port 5432 on host db is open
+            # waits for the PostgreSQL service to be ready before starting your FastAPI app
+    
+    
+    # command: ["sh", "-c", "./wait-for-it.sh db:5432 -t15 -- uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]
+    # command: ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]  # ensures the app module is found by Python when running tests or the FastAPI application.
+    # command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]   # starts the FastAPI app using uvicorn
+    # command: ["sh", "-c", "pytest /app/tests && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]  # run the tests before starting the FastAPI app
+
+volumes:
+  postgres_data:
